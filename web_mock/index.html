@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RiseAI - Smart Alarm & Wake-Up Coach</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- TensorFlow.js + MoveNet Pose Detection (correct compatible versions) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.2.0/dist/tf-core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.2.0/dist/tf-backend-webgl.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu@4.2.0/dist/tf-backend-cpu.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@4.2.0/dist/tf-converter.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Left Panel: Project Info -->
+    <div class="info-panel">
+      <div class="brand">
+        <i class="fa-solid fa-wand-magic-sparkles brand-icon"></i>
+        <h1>RiseAI</h1>
+      </div>
+      <p class="tagline">India's AI-Powered Smart Alarm & Personalized Wake-Up Coach</p>
+      
+      <div class="features-list">
+        <div class="feature-item">
+          <i class="fa-solid fa-camera animate-icon"></i>
+          <div>
+            <h3>AI Pose Estimation</h3>
+            <p>Verifies exercises like squats and jumping jacks to silence the alarm. Cheating-proof!</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <i class="fa-solid fa-brain animate-icon"></i>
+          <div>
+            <h3>AI Adaptive Engine</h3>
+            <p>Learns wake-up habits and adjusts morning challenge repetitions and difficulty daily.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <i class="fa-solid fa-chart-simple animate-icon"></i>
+          <div>
+            <h3>Gamified Wake-Up Analytics</h3>
+            <p>Track streaks, XP, level progression, calories, and unlock exclusive badges.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-box">
+        <h3>Simulation Controls</h3>
+        <button id="trigger-alarm-btn" class="control-btn"><i class="fa-solid fa-bell"></i> Trigger Morning Alarm</button>
+        <button id="reset-sim-btn" class="control-btn secondary"><i class="fa-solid fa-rotate-left"></i> Reset App Flow</button>
+      </div>
+
+      <div class="footer">
+        <p>RiseAI Demo Platform &copy; 2026. Made with <i class="fa-solid fa-heart text-red"></i> for Hackathons.</p>
+      </div>
+    </div>
+
+    <!-- Right Panel: Phone Frame Mockup -->
+    <div class="phone-panel">
+      <div class="smartphone">
+        <div class="smartphone-screen">
+          <!-- Screen Notch -->
+          <div class="notch"></div>
+          
+          <!-- Screen Views Container -->
+          <div id="view-container">
+
+            <!-- 1. SPLASH SCREEN -->
+            <div id="view-splash" class="view active">
+              <div class="splash-content">
+                <div class="splash-logo">
+                  <i class="fa-solid fa-clock alarm-pulse"></i>
+                </div>
+                <h2 class="animate-text">RiseAI</h2>
+                <p>Smart Alarm & Wake-Up Coach</p>
+                <div class="loader"></div>
+              </div>
+            </div>
+
+            <!-- 2. ONBOARDING SCREEN -->
+            <div id="view-onboarding" class="view">
+              <div class="onboarding-carousel">
+                <div class="onboarding-slide active" data-slide="0">
+                  <i class="fa-solid fa-bell-slash onboarding-icon"></i>
+                  <h2>Traditional Alarms Fail</h2>
+                  <p>Standard alarms are too easy to snooze, causing poor productivity, missed deadlines, and groggy mornings.</p>
+                </div>
+                <div class="onboarding-slide" data-slide="1">
+                  <i class="fa-solid fa-camera-retro onboarding-icon"></i>
+                  <h2>AI-Verified Wake-Up</h2>
+                  <p>RiseAI forces you to perform physical exercises like squats or jumping jacks verified by on-device AI camera tracking.</p>
+                </div>
+                <div class="onboarding-slide" data-slide="2">
+                  <i class="fa-solid fa-trophy onboarding-icon"></i>
+                  <h2>Gamified Coaching</h2>
+                  <p>Earn XP, unlock level milestones, track calories, and build healthy sleep habits with adaptive daily challenges.</p>
+                </div>
+              </div>
+              <div class="onboarding-footer">
+                <div class="carousel-dots">
+                  <span class="dot active"></span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                </div>
+                <button id="onboarding-next-btn" class="app-btn">Next <i class="fa-solid fa-arrow-right"></i></button>
+              </div>
+            </div>
+
+            <!-- 3. LOGIN SCREEN -->
+            <div id="view-login" class="view">
+              <div class="login-content">
+                <i class="fa-solid fa-shield-halved login-logo"></i>
+                <h2>Welcome to RiseAI</h2>
+                <p>Sign in to sync your routines, save streaks, and track weekly health reports.</p>
+                
+                <div class="login-buttons">
+                  <button class="login-btn google-btn"><i class="fa-brands fa-google"></i> Continue with Google</button>
+                  <button class="login-btn email-btn"><i class="fa-solid fa-envelope"></i> Continue with Email</button>
+                  <button id="guest-login-btn" class="login-btn guest-btn">Continue as Guest</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. HOME SCREEN -->
+            <div id="view-home" class="view">
+              <div class="home-header">
+                <div class="user-profile">
+                  <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                  <div>
+                    <h4>Welcome, Guest</h4>
+                    <p>Level 2 Wake-Up Coach</p>
+                  </div>
+                </div>
+                <div class="header-actions">
+                  <i class="fa-solid fa-bell"></i>
+                </div>
+              </div>
+
+              <div class="home-scroll-content">
+                <!-- Streak Card -->
+                <div class="streak-card">
+                  <div class="streak-stat">
+                    <span>Current Streak</span>
+                    <h3>7 Days</h3>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="streak-stat">
+                    <span>Wake-Up Score</span>
+                    <h3>92%</h3>
+                  </div>
+                </div>
+
+                <!-- Next Alarm Section -->
+                <div class="section-header">
+                  <h3>Your Alarms</h3>
+                  <span id="add-alarm-btn"><i class="fa-solid fa-plus"></i> Add New</span>
+                </div>
+
+                <div class="alarms-list">
+                  <div class="alarm-item" data-time24="06:15">
+                    <div class="alarm-time-info">
+                      <h2>06:15 <span>AM</span></h2>
+                      <p>Squats - 15 reps • Everyday</p>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" checked>
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <div class="alarm-item" data-time24="08:00">
+                    <div class="alarm-time-info">
+                      <h2>08:00 <span>AM</span></h2>
+                      <p>Jumping Jacks - 20 reps • Everyday</p>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" checked>
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- AI Recommendation -->
+                <div class="ai-recommendation">
+                  <div class="ai-rec-header">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <h4>AI Adaptive Tip</h4>
+                  </div>
+                  <p>You woke up 3 minutes faster yesterday! Increasing squats by 2 reps tomorrow for consistent wakefulness optimization.</p>
+                </div>
+              </div>
+
+              <!-- Bottom Bar -->
+              <div class="app-bottom-bar">
+                <div class="nav-item active" data-target="home"><i class="fa-solid fa-house"></i><span>Home</span></div>
+                <div class="nav-item" data-target="analytics"><i class="fa-solid fa-chart-line"></i><span>Analytics</span></div>
+                <div class="nav-item" data-target="history"><i class="fa-solid fa-history"></i><span>History</span></div>
+                <div class="nav-item" data-target="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></div>
+              </div>
+            </div>
+
+            <!-- 5. ANALYTICS VIEW -->
+            <div id="view-analytics" class="view">
+              <div class="view-header">
+                <h3>Analytics</h3>
+              </div>
+              <div class="home-scroll-content">
+                <div class="stats-row">
+                  <div class="stat-box">
+                    <i class="fa-solid fa-clock color-blue"></i>
+                    <span>Avg. Time</span>
+                    <h4>6:15 AM</h4>
+                  </div>
+                  <div class="stat-box">
+                    <i class="fa-solid fa-fire color-orange"></i>
+                    <span>Calories</span>
+                    <h4>1,240 kcal</h4>
+                  </div>
+                </div>
+
+                <div class="chart-card">
+                  <h4>Weekly Wake-Up Quality</h4>
+                  <div class="bar-chart">
+                    <div class="bar-item"><div class="bar" style="height: 60%"></div><span>M</span></div>
+                    <div class="bar-item"><div class="bar" style="height: 80%"></div><span>T</span></div>
+                    <div class="bar-item"><div class="bar" style="height: 70%"></div><span>W</span></div>
+                    <div class="bar-item"><div class="bar" style="height: 95%"></div><span>T</span></div>
+                    <div class="bar-item"><div class="bar" style="height: 85%"></div><span>F</span></div>
+                    <div class="bar-item"><div class="bar" style="height: 90%"></div><span>S</span></div>
+                    <div class="bar-item"><div class="bar" style="height: 92%"></div><span>S</span></div>
+                  </div>
+                </div>
+
+                <div class="achievements-section">
+                  <h4>Achievements</h4>
+                  <div class="achievements-grid">
+                    <div class="badge-item">
+                      <i class="fa-solid fa-sun badge-icon gold"></i>
+                      <span>Early Bird</span>
+                    </div>
+                    <div class="badge-item">
+                      <i class="fa-solid fa-fire badge-icon orange"></i>
+                      <span>7-Day Streak</span>
+                    </div>
+                    <div class="badge-item">
+                      <i class="fa-solid fa-dumbbell badge-icon blue"></i>
+                      <span>500 Squats</span>
+                    </div>
+                    <div class="badge-item">
+                      <i class="fa-solid fa-trophy badge-icon purple"></i>
+                      <span>Champion</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom Bar -->
+              <div class="app-bottom-bar">
+                <div class="nav-item" data-target="home"><i class="fa-solid fa-house"></i><span>Home</span></div>
+                <div class="nav-item active" data-target="analytics"><i class="fa-solid fa-chart-line"></i><span>Analytics</span></div>
+                <div class="nav-item" data-target="history"><i class="fa-solid fa-history"></i><span>History</span></div>
+                <div class="nav-item" data-target="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></div>
+              </div>
+            </div>
+
+            <!-- 6. HISTORY VIEW -->
+            <div id="view-history" class="view">
+              <div class="view-header">
+                <h3>Wake-Up History</h3>
+              </div>
+              <div class="home-scroll-content">
+                <div class="history-list">
+                  <div class="history-item">
+                    <div class="history-left">
+                      <div class="history-check"><i class="fa-solid fa-check"></i></div>
+                      <div>
+                        <h4>Saturday, Jun 27</h4>
+                        <p>Squats - 15 reps • 6:05 AM</p>
+                      </div>
+                    </div>
+                    <div class="history-right">
+                      <h4 class="color-green">95%</h4>
+                      <p>Accuracy</p>
+                    </div>
+                  </div>
+                  <div class="history-item">
+                    <div class="history-left">
+                      <div class="history-check"><i class="fa-solid fa-check"></i></div>
+                      <div>
+                        <h4>Friday, Jun 26</h4>
+                        <p>Squats - 15 reps • 6:12 AM</p>
+                      </div>
+                    </div>
+                    <div class="history-right">
+                      <h4 class="color-green">92%</h4>
+                      <p>Accuracy</p>
+                    </div>
+                  </div>
+                  <div class="history-item">
+                    <div class="history-left">
+                      <div class="history-check"><i class="fa-solid fa-check"></i></div>
+                      <div>
+                        <h4>Thursday, Jun 25</h4>
+                        <p>Stretching - 10 reps • 6:08 AM</p>
+                      </div>
+                    </div>
+                    <div class="history-right">
+                      <h4 class="color-green">98%</h4>
+                      <p>Accuracy</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom Bar -->
+              <div class="app-bottom-bar">
+                <div class="nav-item" data-target="home"><i class="fa-solid fa-house"></i><span>Home</span></div>
+                <div class="nav-item" data-target="analytics"><i class="fa-solid fa-chart-line"></i><span>Analytics</span></div>
+                <div class="nav-item active" data-target="history"><i class="fa-solid fa-history"></i><span>History</span></div>
+                <div class="nav-item" data-target="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></div>
+              </div>
+            </div>
+
+            <!-- 7. SETTINGS VIEW -->
+            <div id="view-settings" class="view">
+              <div class="view-header">
+                <h3>Settings</h3>
+              </div>
+              <div class="home-scroll-content">
+                <div class="settings-group">
+                  <h5>Account</h5>
+                  <div id="tile-profile" class="settings-tile"><i class="fa-solid fa-user"></i> Profile <i class="fa-solid fa-chevron-right chevron"></i></div>
+                  <div id="tile-notifications" class="settings-tile"><i class="fa-solid fa-bell"></i> Notifications <i class="fa-solid fa-chevron-right chevron"></i></div>
+                </div>
+                <div class="settings-group">
+                  <h5>AI & Exercise</h5>
+                  <div id="tile-exercises" class="settings-tile"><i class="fa-solid fa-dumbbell"></i> Exercise Preferences <i class="fa-solid fa-chevron-right chevron"></i></div>
+                  <div id="tile-adaptive" class="settings-tile"><i class="fa-solid fa-brain"></i> Adaptive Difficulty <i class="fa-solid fa-chevron-right chevron"></i></div>
+                </div>
+                <div class="settings-group">
+                  <h5>Appearance</h5>
+                  <div id="tile-theme" class="settings-tile"><i class="fa-solid fa-moon" id="theme-tile-icon"></i> <span id="theme-tile-text">Theme (Dark Mode)</span> <span class="badge" id="theme-status-badge">Dark</span></div>
+                  <div id="tile-language" class="settings-tile"><i class="fa-solid fa-globe"></i> Language <span class="badge">English (IN)</span></div>
+                </div>
+                <div class="logout-container">
+                  <button id="logout-btn" class="app-btn danger">Logout</button>
+                </div>
+              </div>
+
+              <!-- Bottom Bar -->
+              <div class="app-bottom-bar">
+                <div class="nav-item" data-target="home"><i class="fa-solid fa-house"></i><span>Home</span></div>
+                <div class="nav-item" data-target="analytics"><i class="fa-solid fa-chart-line"></i><span>Analytics</span></div>
+                <div class="nav-item" data-target="history"><i class="fa-solid fa-history"></i><span>History</span></div>
+                <div class="nav-item active" data-target="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></div>
+              </div>
+            </div>
+
+            <!-- 8. ALARM RINGING VIEW -->
+            <div id="view-ringing" class="view">
+              <div class="ringing-content">
+                <div class="alarm-ringing-animation">
+                  <div class="bell-wave"></div>
+                  <div class="bell-wave"></div>
+                  <i class="fa-solid fa-bell ringing-bell"></i>
+                </div>
+                <h1 id="ringing-time-display">06:15</h1>
+                <p class="ringing-subtitle">Time to Rise & Shine!</p>
+                
+                <div class="challenge-preview-card">
+                  <i class="fa-solid fa-dumbbell challenge-icon"></i>
+                  <div>
+                    <h5>Today's AI Challenge</h5>
+                    <p id="challenge-detail">15 Squats</p>
+                  </div>
+                </div>
+
+                <button id="im-awake-btn" class="app-btn pulsing-btn">I'm Awake</button>
+              </div>
+            </div>
+
+            <!-- 9. AI CAMERA VIEW -->
+            <div id="view-camera" class="view camera-fullscreen">
+              <!-- Full-screen video + canvas -->
+              <video id="webcam" autoplay playsinline muted class="camera-video-bg"></video>
+              <canvas id="skeleton-canvas" class="camera-canvas-overlay"></canvas>
+
+              <!-- Top overlay: exercise name + ALARM ACTIVE badge -->
+              <div class="camera-top-bar">
+                <span id="camera-exercise-title" class="cam-exercise-label">Squats</span>
+                <div class="alarm-active-badge">ALARM ACTIVE</div>
+              </div>
+
+              <!-- Big rep counter: "8 / 15" centered top -->
+              <div class="camera-rep-counter">
+                <span id="current-rep-count">0</span><span class="cam-total-reps">/ <span class="total-reps">15</span></span>
+              </div>
+
+              <!-- Status hint: centered mid-screen -->
+              <div id="camera-status-pill" class="camera-status-hint">
+                Position yourself in view
+              </div>
+
+              <!-- Hidden subtitle (used by JS, not shown) -->
+              <span id="camera-target-subtitle" style="display:none">Target: 15 reps</span>
+            </div>
+
+            <!-- 10. SUCCESS CONFETTI VIEW -->
+            <div id="view-success" class="view">
+              <div class="success-screen">
+                <i class="fa-solid fa-circle-check success-check"></i>
+                <h2>Morning Complete!</h2>
+                <p>You crushed today's wake-up challenge.</p>
+                
+                <div class="xp-gain-card">
+                  <div class="xp-stat">
+                    <span>XP Gained</span>
+                    <h4>+150 XP</h4>
+                  </div>
+                  <div class="vertical-line"></div>
+                  <div class="xp-stat">
+                    <span>New Streak</span>
+                    <h4>8 Days</h4>
+                  </div>
+                </div>
+
+                <button id="success-done-btn" class="app-btn">View Dashboard</button>
+              </div>
+            </div>
+
+            <!-- ================= INTERACTIVE POPUP MODALS ================= -->
+            <!-- A. Google Sign-in Modal (Realistic Google Accounts OAuth Selector) -->
+            <div id="modal-google-signin" class="modal-overlay">
+              <div class="google-oauth-modal">
+                <div class="oauth-header">
+                  <svg class="google-logo-svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  <h4>Sign in with Google</h4>
+                  <span class="close-modal-btn" id="close-google-btn">&times;</span>
+                </div>
+                <div class="oauth-body">
+                  <p class="oauth-subtitle">Choose an account to continue to <strong>RiseAI</strong></p>
+                  
+                  <div class="google-accounts-list">
+                    <div class="google-account-option" id="google-account-1">
+                      <div class="g-avatar">A</div>
+                      <div class="g-account-details">
+                        <span class="g-name">Arpan Deshmukh</span>
+                        <span class="g-email">arpan.deshmukh@gmail.com</span>
+                      </div>
+                    </div>
+                    
+                    <div class="google-account-option" id="google-account-2">
+                      <div class="g-avatar guest">G</div>
+                      <div class="g-account-details">
+                        <span class="g-name">Use another account</span>
+                        <span class="g-email">Sign in to a different Google profile</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="oauth-footer">
+                    <p>To continue, Google will share your name, email address, language preference, and profile picture with RiseAI.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- A2. Email Sign-in Modal -->
+            <div id="modal-email-signin" class="modal-overlay">
+              <div class="app-modal">
+                <div class="modal-header">
+                  <h4>Email Account Sign In</h4>
+                  <span class="close-modal-btn" id="close-email-btn">&times;</span>
+                </div>
+                <div class="modal-body">
+                  <div class="google-prompt-icon"><i class="fa-solid fa-envelope color-blue"></i></div>
+                  <p class="modal-intro-text">Sign in to RiseAI using your email and password credentials</p>
+                  
+                  <div class="input-field">
+                    <label>Display Name / Username</label>
+                    <input type="text" id="email-input-name" placeholder="e.g. Rahul Sharma" required>
+                  </div>
+                  <div class="input-field">
+                    <label>Email address</label>
+                    <input type="email" id="email-input-email" placeholder="e.g. rahul@example.com" required>
+                  </div>
+                  <div class="input-field">
+                    <label>Password</label>
+                    <input type="password" id="email-input-password" placeholder="••••••••" required>
+                  </div>
+                  
+                  <button id="submit-email-login" class="app-btn">Sign In & Connect</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- B. Edit Profile Modal -->
+            <div id="modal-profile" class="modal-overlay">
+              <div class="app-modal">
+                <div class="modal-header">
+                  <h4>Edit Profile</h4>
+                  <span class="close-modal-btn" id="close-profile-btn">&times;</span>
+                </div>
+                <div class="modal-body">
+                  <div class="input-field">
+                    <label>Display Name</label>
+                    <input type="text" id="profile-name-input" value="Guest">
+                  </div>
+                  <div class="input-field">
+                    <label>Email Address</label>
+                    <input type="email" id="profile-email-input" placeholder="guest@example.com">
+                  </div>
+                  <div class="input-field">
+                    <label>Wake-Up Coach Title</label>
+                    <select id="profile-coach-select">
+                      <option value="Level 2 Wake-Up Coach">Level 2 Wake-Up Coach</option>
+                      <option value="Level 3 Wake-Up Coach">Level 3 Wake-Up Coach</option>
+                      <option value="Level 5 Wake-Up Coach">Level 5 Wake-Up Coach</option>
+                      <option value="Early Bird Champion">Early Bird Champion</option>
+                    </select>
+                  </div>
+                  <button id="save-profile-btn" class="app-btn">Save Changes</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- C. Notifications Modal -->
+            <div id="modal-notifications" class="modal-overlay">
+              <div class="app-modal">
+                <div class="modal-header">
+                  <h4>Alert Preferences</h4>
+                  <span class="close-modal-btn" id="close-notifications-btn">&times;</span>
+                </div>
+                <div class="modal-body">
+                  <div class="setting-toggle-row">
+                    <div>
+                      <h5>Bedtime Reminder</h5>
+                      <p>Alerts to sleep on time</p>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" id="toggle-bedtime" checked>
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <div class="setting-toggle-row">
+                    <div>
+                      <h5>Hydration Warning</h5>
+                      <p>Drink water alerts</p>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" id="toggle-hydration">
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <div class="setting-toggle-row">
+                    <div>
+                      <h5>Weekly Reports</h5>
+                      <p>Analytics reports delivery</p>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" id="toggle-reports" checked>
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <button id="save-notifications-btn" class="app-btn">Apply Settings</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- D. Exercise Preferences Modal -->
+            <div id="modal-exercises" class="modal-overlay">
+              <div class="app-modal">
+                <div class="modal-header">
+                  <h4>Exercise Preferences</h4>
+                  <span class="close-modal-btn" id="close-exercises-btn">&times;</span>
+                </div>
+                <div class="modal-body">
+                  <div class="input-field">
+                    <label>AI Wake-up Exercise</label>
+                    <select id="exercise-type-select">
+                      <option value="Squats">Squats</option>
+                      <option value="Jumping Jacks">Jumping Jacks</option>
+                      <option value="Push-ups">Push-ups</option>
+                      <option value="Lunges">Lunges</option>
+                      <option value="Stretching">Stretching</option>
+                    </select>
+                  </div>
+                  <div class="input-field">
+                    <label>Repetitions Count</label>
+                    <input type="number" id="exercise-reps-input" value="15" min="5" max="50">
+                  </div>
+                  <div class="input-field">
+                    <label>Challenge Difficulty</label>
+                    <select id="exercise-diff-select">
+                      <option value="Easy">Easy</option>
+                      <option value="Medium" selected>Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
+                  </div>
+                  <button id="save-exercises-btn" class="app-btn">Update Alarm settings</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- E. Adaptive Difficulty Info Modal -->
+            <div id="modal-adaptive" class="modal-overlay">
+              <div class="app-modal">
+                <div class="modal-header">
+                  <h4>Adaptive Difficulty</h4>
+                  <span class="close-modal-btn" id="close-adaptive-btn">&times;</span>
+                </div>
+                <div class="modal-body">
+                  <div class="adaptive-info-card">
+                    <i class="fa-solid fa-brain color-orange"></i>
+                    <div>
+                      <h5>AI Recommendation Engine</h5>
+                      <p>The AI dynamically scales reps up or down by 15% depending on your average wake-up delay and movement accuracy.</p>
+                    </div>
+                  </div>
+                  <div class="setting-toggle-row">
+                    <div>
+                      <h5>Enable Auto-Scaling</h5>
+                      <p>Let AI adjust challenge counts</p>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" id="toggle-autoscaling" checked>
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <button id="save-adaptive-btn" class="app-btn">Save Preferences</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- F. Create Alarm Modal -->
+            <div id="modal-create-alarm" class="modal-overlay">
+              <div class="app-modal">
+                <div class="modal-header">
+                  <h4>Create Alarm</h4>
+                  <span class="close-modal-btn" id="close-create-alarm-btn">&times;</span>
+                </div>
+                <div class="modal-body">
+                  <div class="input-field">
+                    <label>Alarm Time</label>
+                    <div class="custom-time-picker">
+                      <select id="alarm-hour-select">
+                        <option value="1">01</option>
+                        <option value="2">02</option>
+                        <option value="3">03</option>
+                        <option value="4">04</option>
+                        <option value="5">05</option>
+                        <option value="6">06</option>
+                        <option value="7" selected>07</option>
+                        <option value="8">08</option>
+                        <option value="9">09</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                      </select>
+                      <span class="time-colon">:</span>
+                      <select id="alarm-minute-select">
+                        <option value="00" selected>00</option>
+                        <option value="01">01</option>
+                        <option value="02">02</option>
+                        <option value="03">03</option>
+                        <option value="04">04</option>
+                        <option value="05">05</option>
+                        <option value="06">06</option>
+                        <option value="07">07</option>
+                        <option value="08">08</option>
+                        <option value="09">09</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                        <option value="15">15</option>
+                        <option value="16">16</option>
+                        <option value="17">17</option>
+                        <option value="18">18</option>
+                        <option value="19">19</option>
+                        <option value="20">20</option>
+                        <option value="21">21</option>
+                        <option value="22">22</option>
+                        <option value="23">23</option>
+                        <option value="24">24</option>
+                        <option value="25">25</option>
+                        <option value="26">26</option>
+                        <option value="27">27</option>
+                        <option value="28">28</option>
+                        <option value="29">29</option>
+                        <option value="30">30</option>
+                        <option value="31">31</option>
+                        <option value="32">32</option>
+                        <option value="33">33</option>
+                        <option value="34">34</option>
+                        <option value="35">35</option>
+                        <option value="36">36</option>
+                        <option value="37">37</option>
+                        <option value="38">38</option>
+                        <option value="39">39</option>
+                        <option value="40">40</option>
+                        <option value="41">41</option>
+                        <option value="42">42</option>
+                        <option value="43">43</option>
+                        <option value="44">44</option>
+                        <option value="45">45</option>
+                        <option value="46">46</option>
+                        <option value="47">47</option>
+                        <option value="48">48</option>
+                        <option value="49">49</option>
+                        <option value="50">50</option>
+                        <option value="51">51</option>
+                        <option value="52">52</option>
+                        <option value="53">53</option>
+                        <option value="54">54</option>
+                        <option value="55">55</option>
+                        <option value="56">56</option>
+                        <option value="57">57</option>
+                        <option value="58">58</option>
+                        <option value="59">59</option>
+                      </select>
+                      <div class="ampm-toggle">
+                        <button type="button" class="ampm-btn active" id="ampm-am">AM</button>
+                        <button type="button" class="ampm-btn" id="ampm-pm">PM</button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="input-field">
+                    <label>Repeat Days</label>
+                    <div class="days-selector">
+                      <span class="day-dot active" data-day="1">M</span>
+                      <span class="day-dot active" data-day="2">T</span>
+                      <span class="day-dot active" data-day="3">W</span>
+                      <span class="day-dot active" data-day="4">T</span>
+                      <span class="day-dot active" data-day="5">F</span>
+                      <span class="day-dot" data-day="6">S</span>
+                      <span class="day-dot" data-day="7">S</span>
+                    </div>
+                  </div>
+
+                  <div class="input-field">
+                    <label>AI Challenge Exercise</label>
+                    <select id="alarm-exercise-select">
+                      <option value="Squats">Squats</option>
+                      <option value="Jumping Jacks">Jumping Jacks</option>
+                      <option value="Push-ups">Push-ups</option>
+                      <option value="Lunges">Lunges</option>
+                      <option value="Stretching">Stretching</option>
+                    </select>
+                  </div>
+
+                  <div class="input-field">
+                    <label>Reps Count</label>
+                    <input type="number" id="alarm-reps-input" value="10" min="5" max="50">
+                  </div>
+
+                  <button id="save-new-alarm-btn" class="app-btn">Add Alarm</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
