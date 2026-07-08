@@ -2,8 +2,8 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/:path*",
-      "destination": "/web_mock/:path*"
+      "source": "/((?!web_mock/).*)",
+      "destination": "/web_mock/$1"
     }
   ]
 }
